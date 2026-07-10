@@ -1,0 +1,8 @@
+pandas
+requests
+telegram-logging
+python-dotenv
+sqlalchemy
+psycopg2-binary
+pyarrow
+fastparquet

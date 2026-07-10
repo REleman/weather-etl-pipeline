@@ -1,0 +1,16 @@
+config/.env
+.env
+
+layers/
+*.parquet
+*.json
+
+*.log
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+.vscode/
+.idea/
