@@ -1,9 +1,4 @@
 import pytest
-<<<<<<< HEAD
-=======
-# from jsonschema import validate
-import requests_mock
->>>>>>> f822f2315fd359219230f7a1a3a04f4bd338cae3
 import requests
 import sys
 
