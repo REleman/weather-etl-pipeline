@@ -1,9 +1,17 @@
 import pandas as pd
+<<<<<<< HEAD
+=======
+import pytest
+>>>>>>> f822f2315fd359219230f7a1a3a04f4bd338cae3
 import sys
 
 sys.path.append('/home/weather-etl-pipeline/')
 
+<<<<<<< HEAD
 from src.Transform.transform import transform
+=======
+from src.Transform.transform import transform, get_raw_data
+>>>>>>> f822f2315fd359219230f7a1a3a04f4bd338cae3
 
 def test_transform_success():
     #Правильность очистки и объединения данных
@@ -25,4 +33,10 @@ def test_transform_success():
     assert "icon" not in df_result.columns
     assert "gust" not in df_result.columns
     assert "document_data" in df_result.columns
+<<<<<<< HEAD
     assert pd.api.types.is_datetime64_any_dtype(df_result['document_data'])
+=======
+    assert pd.api.types.is_datetime64_any_dtype(df_result['document_data'])
+
+    
+>>>>>>> f822f2315fd359219230f7a1a3a04f4bd338cae3
