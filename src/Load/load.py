@@ -55,8 +55,8 @@ def load_file(path = silver_path):
     try:
         file = glob.glob(f"{path}/*.parquet")
         if not file:
-            log.warning("WARNING. No parquet file")
-            telelogger.warning("WARNING. No parquet file")
+            log.error("ERROR. No parquet file")
+            telelogger.error("ERROR. No parquet file")
             raise FileNotFoundError("No parquet file")
         log.info("INFO. Parquet file found")
         latest_file = max(file, key=os.path.getctime)

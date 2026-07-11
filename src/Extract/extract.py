@@ -43,12 +43,10 @@ log.basicConfig(level=log.INFO, filename="py_log.log",filemode="w",
                     format="%(asctime)s %(levelname)s %(message)s")
 
 def get_data():
-    log.info("Загрузка get data")
     try:
         response = req.get(API_PATH)
         response.raise_for_status()
         log.info("INFO. Data is been added!")
-        telelogger.info("INFO. Data is been added")
         return response.json()
     except ConnectionError:
         log.error("ERROR. Internet lost")
@@ -74,7 +72,6 @@ def save_raw_data():
         df = pd.DataFrame([data])
         df.to_json(os.path.join(raw_path, f"{file_name}.json"), orient='records')
         log.info("INFO. Data save in layers/raw as JSON")
-        telelogger.info("INFO. Data save in layers/raw as JSON")
     except Exception as err:
         log.error(f"ERROR. Error - {err}")
         telelogger.error(f"ERROR. Error ({err})")

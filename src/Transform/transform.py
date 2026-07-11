@@ -40,20 +40,17 @@ def get_raw_data():
     if files:
         latest_file = max(files, key=os.path.getctime)
         log.info("INFO. Raw data file found")
-        telelogger.info("INFO. Raw data file found")
     else:
         latest_file = False
-        log.warning("WARN! Transformation raw file is not found")
-        telelogger.warning("WARN! Transformation raw file is not found")
+        log.error("ERROR. Transformation raw file is not found")
+        telelogger.warning("ERROR. Transformation raw file is not found")
     
     if latest_file:
         try:
             data = pd.read_json(latest_file)
             log.info("INFO. Raw data loaded")
-            telelogger.info("INFO. Raw data loaded")
             copydf = transform(data.copy(), latest_file)
             log.info("INFO. Raw data transformed")
-            telelogger.info("INFO. Raw data transformed")
             save_transformed_data(copydf, latest_file)
         except Exception as err:
             log.error("ERROR. Cant access to file")
@@ -83,7 +80,6 @@ def save_transformed_data(dataframe : pd.DataFrame,filename : str):
         date = os.path.basename(filename).split('.')[0]
         dataframe.to_parquet(os.path.join(silver_path, f"{date}.parquet"))
         log.info("INFO. Transformed data added in layers/silver")
-        telelogger.info("INFO. Transformed data added in layers/silver")
     except Exception as err:
         log.error(f"ERROR. Error save transformed data - {err}")
         telelogger.error(f"ERROR. Error save transformed data - {err}")
