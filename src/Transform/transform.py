@@ -43,7 +43,7 @@ def get_raw_data():
     else:
         latest_file = False
         log.error("ERROR. Transformation raw file is not found")
-        telelogger.warning("ERROR. Transformation raw file is not found")
+        telelogger.error("ERROR. Transformation raw file is not found")
     
     if latest_file:
         try:
