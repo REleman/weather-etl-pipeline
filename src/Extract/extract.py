@@ -6,14 +6,17 @@ import datetime as dt
 from telegram_logging import TelegramHandler, TelegramFormatter
 from dotenv import load_dotenv
 import os
+import boto3
+from botocore.client import Config
 
 load_dotenv(dotenv_path='/home/weather-etl-pipeline/config/.env')
 
 tg_token = os.getenv("TG_TOKEN")
 tg_chat_id = os.getenv("TG_CHAT_ID")
 api_token = os.getenv("API_KEY")
-raw_path = os.getenv("RAW_PATH")
-log.info("DEBUG - " + raw_path)
+s3_endpoint_url = os.getenv("S3_ENDPOINT_URL")
+minio_aws_access_key_id = os.getenv("MINIO_AWS_ACCESS_KEY_ID")
+minio_aws_secret_access_key = os.getenv("MINIO_AWS_SECRET_ACCESS_KEY")
 
 formatter = TelegramFormatter(
     fmt="[%(asctime)s %(name)s] %(levelname)8s\n\n%(message)s",
@@ -42,6 +45,7 @@ telelogger.addHandler(handler)
 log.basicConfig(level=log.INFO, filename="py_log.log",filemode="w",
                     format="%(asctime)s %(levelname)s %(message)s")
 
+# Получение данных с API
 def get_data():
     try:
         response = req.get(API_PATH)
@@ -64,17 +68,49 @@ def get_data():
         log.error(f"ERROR. Not user error - {err}")
         telelogger.error(f"ERROR. Not user error ({err})")
         raise
+
+#Создание подклюения к MinIO
+def get_s3_client():
+    return boto3.client(
+            's3',
+            endpoint_url = s3_endpoint_url,
+            aws_access_key_id = minio_aws_access_key_id,
+            aws_secret_access_key = minio_aws_secret_access_key,
+            region_name = 'us-east-1',
+            config = Config(signature_version = 's3v4')
+        )
  
+#Сохранение сырых данных в MinIO /raw
 def save_raw_data():
+    try:
+        s3 = get_s3_client()
+        log.info("INFO. S3 connection successful")
+    except Exception as err:
+        log.error(f"ERROR. Cant create s3 connection - {err}")
+        raise
+    
+    try:
+        bucket_name = 'weather-data'
+        if not s3.list_buckets().get('Buckets', []) or not any(b['Name'] == bucket_name for b in s3.list_buckets()['Buckets']):
+            s3.create_bucket(Bucket = bucket_name)
+        log.info("IFNO. Bucket has been found")
+    except Exception as err:
+        log.error(f"ERROR. Cant create bucket - {err}")
+        raise
+    
     try:
         data = get_data()
         file_name = dt.datetime.now().strftime("%y-%m-%d_%H-%M-%S")
         df = pd.DataFrame([data])
-        df.to_json(os.path.join(raw_path, f"{file_name}.json"), orient='records')
-        log.info("INFO. Data save in layers/raw as JSON")
+        json_str = df.to_json(orient = 'records')
+        s3.put_object(
+            Bucket = bucket_name,
+            Key = f"raw/{file_name}.json",
+            Body = json_str
+        )
+        log.info(f"INFO. Data if been added to Bucket weather-data in raw/, check {s3_endpoint_url}")
     except Exception as err:
-        log.error(f"ERROR. Error - {err}")
-        telelogger.error(f"ERROR. Error ({err})")
+        log.error(f"ERRRO. Cant upload json file in s3 - {err}")
         raise
     
     

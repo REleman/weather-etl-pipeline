@@ -8,3 +8,4 @@ pyarrow
 fastparquet
 pytest
 requests_mock
+boto3
