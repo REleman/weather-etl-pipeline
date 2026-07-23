@@ -84,12 +84,14 @@ def get_raw_data():
     try:
         latest_key = get_raw_data_in_s3("weather-data", "raw/")
         latest_file = read_json_from_s3("weather-data", latest_key)
+        folder_path = os.path.dirname(latest_key)
+        silver_folder = folder_path.replace("raw", "silver")
         filename = os.path.basename(latest_key).replace('.json', '')
         df = pd.DataFrame(latest_file)
         log.info("INFO. Raw data loaded")
         copydf = transform(df.copy(), filename)
         log.info("INFO. Raw data transformed")
-        save_transformed_data(copydf, filename)
+        save_transformed_data(copydf, silver_folder, filename)
     except Exception as err:
         log.error(f"ERROR. Cant load trasform data - {err}")
 
@@ -101,8 +103,8 @@ def transform(dataframe : pd.DataFrame, filename:str):
         sys_df = pd.json_normalize(dataframe['sys']).drop(columns=["id"],errors = "ignore")
         wind_df = pd.json_normalize(dataframe["wind"])
         doc_data = dataframe
-        date = filename
-        doc_data["document_data"] = pd.to_datetime(date, format = "%y-%m-%d_%H-%M-%S")
+        date = dt.datetime.now().isoformat(sep=' ', timespec='seconds')
+        doc_data["document_data"] = date
         transformed_df = pd.concat([dataframe['id'], dataframe["name"], sys_df, coord_df, weather_df, main_df, wind_df, doc_data["document_data"]], axis = 1)
         transformed_df["main"] = transformed_df["main"].str.lower()
         transformed_df = transformed_df.drop(["icon","gust"], axis = 1)
@@ -112,7 +114,7 @@ def transform(dataframe : pd.DataFrame, filename:str):
         telelogger.error(f"ERROR. Transfromation error ({err})")
     
 #Функция загрузки трансформированных данных в MinIO
-def save_transformed_data(dataframe : pd.DataFrame,filename : str):
+def save_transformed_data(dataframe : pd.DataFrame, silver_folder, filename : str):
     try:
         s3 = get_s3_client()
         log.info("INFO. S3 connection successful")
@@ -140,7 +142,7 @@ def save_transformed_data(dataframe : pd.DataFrame,filename : str):
         parquet_buffer = io.BytesIO()
         dataframe.to_parquet(parquet_buffer, index=False)
         
-        s3_key = f"silver/{filename}.parquet"
+        s3_key = f"{silver_folder}/{filename}.parquet"
         s3.put_object(
             Bucket=bucket_name,
             Key=s3_key,

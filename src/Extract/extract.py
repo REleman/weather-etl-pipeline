@@ -105,7 +105,7 @@ def save_raw_data():
         json_str = df.to_json(orient = 'records')
         s3.put_object(
             Bucket = bucket_name,
-            Key = f"raw/{file_name}.json",
+            Key = f"raw/year={today.year}/month={today.month}/day={today.day}/{today.isoformat(sep=' ', timespec='seconds')}.json",
             Body = json_str
         )
         log.info(f"INFO. Data if been added to Bucket weather-data in raw/, check {s3_endpoint_url}")

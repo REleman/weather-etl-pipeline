@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine 
+from sqlalchemy import create_engine, text
 import pandas as pd
 import logging as log
 from telegram_logging import TelegramHandler, TelegramFormatter
@@ -102,13 +102,56 @@ def load_data():
         latest_key = get_silver_data_in_s3("weather-data")
         dataframe = read_parquet_from_s3("weather-data", latest_key)
         engine = connect_to_database()
+        create_data_display(engine)
         dataframe.to_sql('weather', engine, if_exists = 'append', index = False)
+        add_data_in_display(engine)
         log.info(f"INFO. Data added to database. \nData info:\n{len(dataframe)} rows\n from silver/")
         telelogger.info(f"INFO. Data added to database. \nData info:\n{len(dataframe)} rows\n from silver/")
     except Exception as err:
         log.error(f"ERROR. Cant add data in database ({err})")    
         telelogger.error(f"ERROR. Cant add data in database ({err})")
         raise
+
+def create_data_display(engine):
+    create_table_query = text("""
+        DROP TABLE IF EXISTS daily_weather_agg;
+        CREATE TABLE daily_weather_agg(
+            date DATE PRIMARY KEY,
+            avg_temp FLOAT,
+            max_temp FLOAT,
+            min_temp FLOAT,
+            avg_humidity FLOAT,
+            records_count INT
+        );
+    """)
+    with engine.connect() as conn:
+        conn.execute(create_table_query)
+        conn.commit()
+        log.info("INFO. Data display created")
+
+def add_data_in_display(engine):
+    query = text(""" 
+    INSERT INTO daily_weather_agg (date, avg_temp, max_temp, min_temp, avg_humidity, records_count)
+    SELECT 
+        DATE(document_data) as date,
+        AVG(temp) as avg_temp,
+        MAX(temp) as max_temp,
+        MIN(temp) as min_temp,
+        AVG(humidity) as avg_humidity,
+        COUNT(*) as records_count
+    FROM weather
+    GROUP BY DATE(document_data)
+    ON CONFLICT (date) DO UPDATE SET
+        avg_temp = EXCLUDED.avg_temp,
+        max_temp = EXCLUDED.max_temp,
+        min_temp = EXCLUDED.min_temp,
+        avg_humidity = EXCLUDED.avg_humidity,
+        records_count = EXCLUDED.records_count;
+    """)
+    with engine.connect() as conn:
+        conn.execute(query)
+        conn.commit()
+        log.info("INFO. Aggregated view updated incrementally")
 
 if __name__ == "__main__":
     load_data()
