@@ -18,9 +18,10 @@ ETL-пайплайн для сбора данных о погоде из OpenWea
 1. Клонируйте репозиторий
 2. Создайте `.env` из `.env.example`
 3. Установите зависимости: `pip install -r requirements.txt`
-4. Запустите Airflow: `airflow standalone`
+4. Запустите MinIO: `minio server ~/minio-data --console-address ":9001"`
+5. Запустите Airflow: `airflow standalone`
 
-*Подразумевается, что вы уже установиили Airflow и запустити его в виртуальном окружении*
+*Подразумевается, что вы уже установиили MinIO и Airflow и запустити его в виртуальном окружении*
 
 ## Переменные окружения
 
